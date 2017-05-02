@@ -15,28 +15,30 @@ pro = {
     'play': p.PLAY,
     'who': p.WHO,
     'login': p.LOGIN,
+    'automatch': p.automatch
 }
+
 
 not_done = True
 try:
     while not_done:
         user_input = input('Please Enter Command: ')
         commands = user_input.split(' ')
-
+        amount_expected = 0
         try:
             if len(commands) == 2:
                 amount_expected = pro[commands[0]](commands[1])
             elif len(commands == 1):
                 amount_expected = pro[commands[0]]()
             else:
-                print("Improper input, please try again")
+                print("Error: Improper input, please try again")
         except TypeError:
-            print('Improper input, please try again')
+            print('Exception: Error when processing request')
 
         amount_received = 0
 
-        while amount_received < amount_expected:
-            data = s.recv(16)
-            amount_received += len(data)
+        data = s.recv(1024)
+        print(data)
+
 finally:
     s.close()

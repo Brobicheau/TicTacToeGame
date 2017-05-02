@@ -3,24 +3,35 @@ import json
 
 class GameProtocol():
 
+    # intitialze the protocol object with information about the server,
+    # and information about the user that is using it.
     def __init__(self, socket, address):
          self.server_address = address
          self.socket = socket
+         self.auto_match = True
 
-    def LOGIN(self, login):
+    # Call to login to the server
+    def LOGIN(self, username):
+        # Construct a message with the command, the username to login with,
+        # and if the user wnats to be matched automatically
         message = {
             'request': 'LOGIN',
-            'login': login
+            'login': username,
+            'automatch': self.auto_match
         }
-        self.socket.sendto(json.dumps(login).encode('utf-8'), self.server_address)
+        # send the message as a json object
+        self.socket.sendto(json.dumps(message).encode('utf-8'), self.server_address)
+
+        # return the length of the message
         return len(message)
+
 
     def PLACE(self, move):
         message = {
             'request':'PLACE',
             'place':move
         }
-        self.socket.sendto(json.dumps(move).encode('utf-8'), self.server_address)
+        self.socket.sendto(json.dumps(message).encode('utf-8'), self.server_address)
         return len(message)
 
     def GAMES(self):
@@ -52,3 +63,12 @@ class GameProtocol():
         self.socket.sendto(json.dumps(message).encode('utf-8'), self.server_address)
         return len(message)
 
+    # used for changing auto match preferences
+    def automatch(self):
+
+        # if auto matchis true, change it to false
+        if self.auto_match:
+            self.automatch = False
+        # if its false, change it to true
+        else:
+            self.auto_match = True

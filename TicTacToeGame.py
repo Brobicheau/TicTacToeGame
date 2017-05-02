@@ -31,9 +31,16 @@ class TicTacToeGame():
         self.magicBoard = makeMagicBoard()
         self.winChecker = makeWinChecker()
         self.moves = 0
-        self.playerOne = {'name':name, 'client':client,'address':address, 'piece':'X'}
-        self.playerTwo = {}
+        self.playerOne = None#{'name':name, 'client':client,'address':address, 'piece':'X'}
+        self.playerTwo = None  # {}
         self.turn = self.playerOne
+        message = {
+            'message':'Waiting for another player',
+            'status': 'OK'
+        }
+        self.playerOne['client'].sendto(json.dumps(message).encode('utf-8'), self.playerOne['address'])
+
+
 
     # switches the turn value after a player has made a valid turn
     def switchTurn(self):
@@ -75,13 +82,18 @@ class TicTacToeGame():
 
     # adds a player to the game
     def addPlayer(self, client, address, name):
-        self.playerTwo['name'] = name
-        self.playerTwo['client'] = client
-        self.playerTwo['address'] = address
-        self.playerTwo['piece'] = 'O'
-        message = {'status':'OK', 'message':'Second player has joined, player ones turn', 'board':self.board}
-        self.playerOne['client'].sendto(json.dumps(message).encode('utf-8'))
-        self.playerOne['client'].sendto(json.dumps(message).encode('utf-8'))
+
+        if self.playerOne == None:
+            self.playerOne['name'] = name
+            self.playerOne['client'] = client
+            self.playerOne['address'] = address
+            self.playerOne['piece'] = 'X'
+        else:
+            self.playerTwo['name'] = name
+            self.playerTwo['client'] = client
+            self.playerTwo['address'] = address
+            self.playerTwo['piece'] = 'O'
+        return
 
     # Displays the board for the user (not used on serverside, probably gunna remove this)
     def displayBoard(self):
