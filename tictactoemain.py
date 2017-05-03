@@ -1,10 +1,17 @@
 import socket
+import json
+import threading
+import time
+import sys
+
+import echo as echo
+
 from GameProtocol import GameProtocol
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_address = ('localhost',10000)
 s.connect(server_address)
-
+lock = threading.Lock()
 
 p = GameProtocol(s, server_address)
 
@@ -18,8 +25,20 @@ pro = {
     'automatch': p.automatch
 }
 
+def waitForMessages():
+
+    while True:
+        print('in thread')
+        data = s.recv(1024)
+        message = json.loads(data)
+        #lock.acquire()
+        print(message, flush=True)
+        #lock.release()
+
 
 not_done = True
+threading.Thread(target=waitForMessages, args={}).start()
+
 try:
     while not_done:
         user_input = input('Please Enter Command: ')
@@ -34,11 +53,9 @@ try:
                 print("Error: Improper input, please try again")
         except TypeError:
             print('Exception: Error when processing request')
+        time.sleep(.01)
 
-        amount_received = 0
-
-        data = s.recv(1024)
-        print(data)
 
 finally:
     s.close()
+

@@ -1,5 +1,5 @@
 from ThreadServer import ThreadServer
-host  = 'localhost'
+host = 'localhost'
 port = 10000
 server = ThreadServer(host , port)
 server.startNewClient()

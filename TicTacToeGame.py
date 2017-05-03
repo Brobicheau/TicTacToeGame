@@ -26,19 +26,16 @@ class TicTacToeGame():
     #   playerOne: First player to join the game, has the 'X' piece, also goes first
     #   playerTwo: Second player to join the game, has the 'O' piece, goes second
     #   turn: A valuet that holds the player whos turn it currently is
-    def __init__(self, client, address, name):
+    def __init__(self, id):
         self.board = makeNewBoard()
         self.magicBoard = makeMagicBoard()
         self.winChecker = makeWinChecker()
         self.moves = 0
-        self.playerOne = None#{'name':name, 'client':client,'address':address, 'piece':'X'}
-        self.playerTwo = None  # {}
+        self.playerOne = {}#{'name':name, 'client':client,'address':address, 'piece':'X'}
+        self.playerTwo = {}  # {}
+        self.ID = id
         self.turn = self.playerOne
-        message = {
-            'message':'Waiting for another player',
-            'status': 'OK'
-        }
-        self.playerOne['client'].sendto(json.dumps(message).encode('utf-8'), self.playerOne['address'])
+
 
 
 
@@ -57,24 +54,26 @@ class TicTacToeGame():
             return self.playerOne
 
     # places a piece on the board with the currently turn's piece
-    def place(self, position, name, client):
-        if self.turn['name'] == name:
+    def place(self, move, player):
+        print(player + "s turn")
+        if self.turn['name'] == player:
             self.moves +=1
-            self.board[int(position)-1] = self.piece
+            self.board[int(move)-1] = self.turn['piece']
             message = {'status':'OK',
                        'message':self.turn['name'] + ' has made a move',
-                       'board':self.board
+                       'board':self.board,
+                       'command':'display'
                        }
-            self.turn['client'].sendto(json.dumps(message).encode('utf-8'))
+            self.turn['client'].sendto(json.dumps(message).encode('utf-8'), self.turn['address'])
             self.switchTurn()
-            self.turn['client'].sendto(json.dumps(message).encode('utf-8'))
+            self.turn['client'].sendto(json.dumps(message).encode('utf-8'),self.turn['address'])
         else:
-            player = self.otherPlayer(self.turn)
+            other = self.otherPlayer()
             message = {'status':'OK',
                        'message':'Not your turn, please wait until other player goes',
                        'board':self.board
                        }
-            player['client'].sendto(json.dumps(message).encode('utf-8'))
+            other['client'].sendto(json.dumps(message).encode('utf-8'), other['address'])
 
 
     def changePlayer(self, newPiece):
@@ -82,17 +81,35 @@ class TicTacToeGame():
 
     # adds a player to the game
     def addPlayer(self, client, address, name):
-
-        if self.playerOne == None:
+        print("adding player")
+        if not self.playerOne:
             self.playerOne['name'] = name
             self.playerOne['client'] = client
             self.playerOne['address'] = address
             self.playerOne['piece'] = 'X'
+            message = {
+                'status':'wait',
+                'message': 'created Game, waiting for another player to join',
+                'command':'wait'
+            }
+            self.playerOne['client'].sendto(json.dumps(message).encode('utf-8'), self.playerOne['address'])
         else:
             self.playerTwo['name'] = name
             self.playerTwo['client'] = client
             self.playerTwo['address'] = address
             self.playerTwo['piece'] = 'O'
+            message1 = {
+                'status':'OK',
+                'message':'added to existing  game as player 2 with piece O. Player 1\'s turn',
+                'command': None
+            }
+            self.playerTwo['client'].sendto(json.dumps(message1).encode('utf-8'), self.playerTwo['address'])
+            message2 = {
+                'status':'OK',
+                'message':'Player 2 has joined, your turn',
+                'command':None
+            }
+            self.playerOne['client'].sendto(json.dumps(message2).encode('utf-8'), self.playerOne['address'])
         return
 
     # Displays the board for the user (not used on serverside, probably gunna remove this)
@@ -124,8 +141,13 @@ class TicTacToeGame():
 
         return False
 
+    def isEqual(self, compare):
+
+        if self.board == compare.getID():
+            return True
+        else:
+            return False
 
 
-
-
-
+    def getID(self):
+        return self.ID

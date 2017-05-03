@@ -29,7 +29,7 @@ class GameProtocol():
     def PLACE(self, move):
         message = {
             'request':'PLACE',
-            'place':move
+            'place': move
         }
         self.socket.sendto(json.dumps(message).encode('utf-8'), self.server_address)
         return len(message)

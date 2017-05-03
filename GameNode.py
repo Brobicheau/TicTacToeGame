@@ -1,7 +1,8 @@
 class GameNode():
-    def __init__(self):
+    def __init__(self, game):
         self.next = None
-        self.game = None
+        self.game = game
+        self.id = game.getID()
         self.p1 = None
         self.p2 = None
 
@@ -23,8 +24,16 @@ class GameNode():
     def setGame(self, game):
         self.game = game
 
-    def checkPlayers(self, player):
+    def addPlayer(self, player):
+        print(player)
+        if self.p1:
+            self.p2 = player
+        else:
+            self.p1 = player
 
+    def checkPlayers(self, player):
+        print(self.p1)
+        print(self.p2)
         if self.p1 == player:
             return True
         elif self.p2 == player:
