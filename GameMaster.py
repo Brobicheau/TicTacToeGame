@@ -32,10 +32,37 @@ class GameMaster():
         # Do stuff under here
         self.lock.acquire()
         try:
+            node = self.gameList.getGameWithID(gameToEnd.getID())
+            player1Name = node.getP1()
+            player2Name = node.getP2()
+            player1 = self.playerList[player1Name]
+            player1[self.status] = 'available'
+            player2 = self.playerList[player2Name]
+            player2[self.status] = 'available'
+            self.gameCount -= 1
             self.gameList.removeGame(gameToEnd)
         except:
             print ('couldnt delete game')
         self.lock.release()
+
+    def endFromDisconnect(self, disconnectedUser):
+
+        try:
+            node = self.gameList.getGameWithPlayer(disconnectedUser)
+            nameToNotify = node.getP1()
+            if nameToNotify is disconnectedUser:
+                nameToNotify = node.getP2()
+            playerToNotify = self.playerList[nameToNotify]
+            playerToNotify[self.status] = 'available'
+            message = {
+                'status':'OK',
+                'message': 'Other player disconnected, you have been changed to available'
+            }
+            playerToNotify['client'].sendto(json.dumps(message).encode('utf-8'), playerToNotify['address'])
+            self.gameCount -= 1
+            self.gameList.removeGame(node.getGame())
+        except:
+            print('couldnt delete disconnected game')
 
     # -- autoPlay --
     # Username: username of the current user of are trying to start a game with
@@ -118,7 +145,7 @@ class GameMaster():
     def newGame(self):
 
         # make a new game with the game id of the current count
-        game = TicTacToeGame(self.gameCount)
+        game = TicTacToeGame(self.gameCount, self)
 
         # Increment the counter
         self.gameCount = self.gameCount + 1

@@ -26,7 +26,7 @@ class TicTacToeGame():
     #   playerOne: First player to join the game, has the 'X' piece, also goes first
     #   playerTwo: Second player to join the game, has the 'O' piece, goes second
     #   turn: A valuet that holds the player whos turn it currently is
-    def __init__(self, id):
+    def __init__(self, id, GameMaster):
         self.board = makeNewBoard()
         self.magicBoard = makeMagicBoard()
         self.winChecker = makeWinChecker()
@@ -35,9 +35,11 @@ class TicTacToeGame():
         self.playerTwo = {}  # {}
         self.ID = id
         self.turn = self.playerOne
+        self.gm = GameMaster
 
 
-
+    def endGame(self):
+        self.gm.endGame(self)
 
     # switches the turn value after a player has made a valid turn
     def switchTurn(self):
@@ -59,14 +61,26 @@ class TicTacToeGame():
         if self.turn['name'] == player:
             self.moves +=1
             self.board[int(move)-1] = self.turn['piece']
-            message = {'status':'OK',
-                       'message':self.turn['name'] + ' has made a move',
-                       'board':self.board,
-                       'command':'display'
-                       }
-            self.turn['client'].sendto(json.dumps(message).encode('utf-8'), self.turn['address'])
-            self.switchTurn()
-            self.turn['client'].sendto(json.dumps(message).encode('utf-8'),self.turn['address'])
+            board = self.displayBoard()
+            if self.checkForWin():
+                message = {'status':'OK',
+                           'message':self.turn['name'] + ' has won the game!\n\n' + board,
+                           'board':self.board,
+                           'command':'display'
+                           }
+                self.turn['client'].sendto(json.dumps(message).encode('utf-8'), self.turn['address'])
+                self.switchTurn()
+                self.turn['client'].sendto(json.dumps(message).encode('utf-8'),self.turn['address'])
+                self.endGame()
+            else:
+                message = {'status':'OK',
+                           'message':self.turn['name'] + ' has made a move\n\n' + board,
+                           'board':self.board,
+                           'command':'display'
+                           }
+                self.turn['client'].sendto(json.dumps(message).encode('utf-8'), self.turn['address'])
+                self.switchTurn()
+                self.turn['client'].sendto(json.dumps(message).encode('utf-8'),self.turn['address'])
         else:
             other = self.otherPlayer()
             message = {'status':'OK',
@@ -100,7 +114,7 @@ class TicTacToeGame():
             self.playerTwo['piece'] = 'O'
             message1 = {
                 'status':'OK',
-                'message':'added to existing  game as player 2 with piece O. Player 1\'s turn',
+                'message':'added to existing  game as ' + name  + ' with piece O. Player 1\'s turn',
                 'command': None
             }
             self.playerTwo['client'].sendto(json.dumps(message1).encode('utf-8'), self.playerTwo['address'])
@@ -114,10 +128,14 @@ class TicTacToeGame():
 
     # Displays the board for the user (not used on serverside, probably gunna remove this)
     def displayBoard(self):
+        board = ''
         for p, i in enumerate(self.board):
             print(i + ' ', end='')
+            board = board + i + ' '
             if (int(p)+1)%3 == 0:
                 print('')
+                board = board + '\n'
+        return board
 
     # Checks if the player has won(need to add functionality to check whos turn it is)
     def checkForWin(self):
@@ -127,7 +145,7 @@ class TicTacToeGame():
 
         testBoard = [0,0,0,0,0,0,0,0,0]
         for p, i in enumerate(self.board):
-                if i == self.piece:
+                if i == self.turn['piece']:
                     testBoard[p] = self.magicBoard[p]
 
         total = 0

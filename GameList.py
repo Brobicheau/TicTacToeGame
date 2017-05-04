@@ -18,6 +18,7 @@ class GameList():
                 return node
             else:
                 prev = node
+                print(node.next())
                 node = node.next()
         return None
 
@@ -37,11 +38,13 @@ class GameList():
         node = self.head
         prev = None
 
-        while node:
+        while node is not None:
             prev = node
+            print (node)
             node = node.next()
         node = GameNode(game)
-        self.head = node
+        if self.head is None:
+            self.head = node
         if prev:
             prev.setNext(node)
         return node

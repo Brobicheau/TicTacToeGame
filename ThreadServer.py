@@ -68,6 +68,7 @@ class ThreadServer():
                     break
         finally:
             # always make sure connection is closed
+            gameMaster.endFromDisconnect(self.username[id])
             print('closing')
             client.close()
 

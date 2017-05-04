@@ -1,16 +1,16 @@
 class GameNode():
     def __init__(self, game):
-        self.next = None
+        self.nex = None
         self.game = game
         self.id = game.getID()
         self.p1 = None
         self.p2 = None
 
-    def getNext(self):
-        return self.next
+    def next(self):
+        return self.nex
 
     def setNext(self, next):
-        self.next = next
+        self.nex = next
 
     def getGame(self):
         return self.game

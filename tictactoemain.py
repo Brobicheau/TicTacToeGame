@@ -32,7 +32,7 @@ def waitForMessages():
         data = s.recv(1024)
         message = json.loads(data)
         #lock.acquire()
-        print(message, flush=True)
+        print(message['message'], flush=True)
         #lock.release()
 
 
