@@ -3,6 +3,7 @@ from GameNode import GameNode
 from GameList import GameList
 import threading
 import json
+import time
 
 
 class GameMaster():
@@ -126,7 +127,7 @@ class GameMaster():
         self.playerNames.append(username)
 
         # save information about the client
-        self.playerList[username] = [True, client, address]
+        self.playerList[username] = ['available', client, address]
 
         # if the user wants to be matched automatically
         if automatch:
@@ -190,8 +191,15 @@ class GameMaster():
     def play(self, askingPlayer, answeringPlayer):
         # TODO: Check if the players are actually in the list first
         # get the players from the player list
-        player1 = self.playerlist[askingPlayer]
-        player2 = self.playerlist[answeringPlayer]
+        player1 = self.playerList[askingPlayer]
+        if askingPlayer in self.playerList and answeringPlayer in self.playerList:
+            player2 = self.playerList[answeringPlayer]
+        else:
+            message = {
+                'status': 'error',
+                'message':'could not find matching player'
+            }
+            player1[self.client].sendto(json.dumps(message).encode('utf-8'), player1[self.address])
 
         # if the answeringPlayer is available
         if player2[self.status] == 'available':
@@ -199,22 +207,85 @@ class GameMaster():
             # Start a new game and add both players to it
             newNode = self.newGame()
             newNode.addPlayer(askingPlayer)
-            newNode.getgame().addPlayer(player1['client'], player1['address'], askingPlayer)
+            newNode.getGame().addPlayer(player1[self.client], player1[self.address], askingPlayer)
             newNode.addPlayer(answeringPlayer)
-            newNode.getgame().addPlayer(player2['client'], player2['address'], answeringPlayer)
+            newNode.getGame().addPlayer(player2[self.client], player2[self.address], answeringPlayer)
 
         # else if the player is busy, send an error message
         elif player2[self.status] == 'busy':
             message = {
-                'stauts':'OK',
+                'status':'WAIT',
                 'message':'player busy'
             }
-            player1['client'].sendto(json.dumps(message).encode('utf-8'), player1['address'])
+            player1[self.client].sendto(json.dumps(message).encode('utf-8'), player1[self.address])
 
-        # Otherwise there is no specified player, so we sned an error message
+        # Otherwise there is no specified player, so we send an error message
         else:
             message = {
-                'stauts':'OK',
+                'status':'ERROR',
                 'message':'player not found'
             }
-            player1['client'].sendto(json.dumps(message).encode('utf-8'), player1['address'])
+            player1[self.client].sendto(json.dumps(message).encode('utf-8'), player1[self.address])
+
+
+    def exit(self, usernameToExit):
+
+        print(self.playerList)
+        print(usernameToExit + 'in exit')
+        print(self.playerList)
+        playerToExit = self.playerList[usernameToExit]
+        otherPlayer = None
+        #if playerToExit[self.status] == 'busy':
+        node = self.gameList.getGameWithPlayer(usernameToExit)
+        game = node.getGame()
+        otherUsername = game.getOtherPlayer(usernameToExit)
+        otherUsername = otherUsername['name']
+        otherPlayer = self.playerList[otherUsername]
+        self.endGame(game)
+
+        exitResponse = {
+            'status':'KILL',
+            'message':'Exiting from game'
+        }
+        response = {
+            'status':'OK',
+            'message':'Other player has quit game, changing status to available'
+        }
+        if otherPlayer:
+            otherPlayer[self.client].sendto(json.dumps(response).encode('utf-8'), otherPlayer[self.address])
+        playerToExit[self.client].sendto(json.dumps(exitResponse).encode('utf-8'), playerToExit[self.address])
+        playerToExit[self.client].close()
+        del self.playerList[usernameToExit]
+
+
+    def listPlayers(self, askingUsername):
+        list = 'here is the list of players currently available\n\n'
+
+        for i in self.playerList:
+            if self.playerList[i][self.status] == 'available':
+                list = list + i + '\n'
+
+        response = {
+            'status':'OK',
+            'message':list
+        }
+        askingPlayer = self.playerList[askingUsername]
+        askingPlayer[self.client].sendto(json.dumps(response).encode('utf-8'), askingPlayer[self.address])
+
+    def listGames(self, askingUsername):
+
+        list = self.gameList.getList()
+        returnList = 'Here are all the currently active games:\n\n'
+        for node in list:
+            returnList = returnList + 'ID: ' + str(node.getGame().getID())
+            returnList = returnList + ', Player(s): ' + node.getP1()
+            if node.getP2():
+                returnList = returnList + ', ' + node.getP2()
+            returnList = returnList + '\n\n'
+        response = {
+            'status':'OK',
+            'message': returnList
+        }
+        print (returnList)
+        player = self.playerList[askingUsername]
+        player[self.client].sendto(json.dumps(response).encode('utf-8'), player[self.address])

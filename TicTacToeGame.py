@@ -83,7 +83,7 @@ class TicTacToeGame():
                 self.turn['client'].sendto(json.dumps(message).encode('utf-8'),self.turn['address'])
         else:
             other = self.otherPlayer()
-            message = {'status':'OK',
+            message = {'status':'WAIT',
                        'message':'Not your turn, please wait until other player goes',
                        'board':self.board
                        }
@@ -102,7 +102,7 @@ class TicTacToeGame():
             self.playerOne['address'] = address
             self.playerOne['piece'] = 'X'
             message = {
-                'status':'wait',
+                'status':'WAIT',
                 'message': 'created Game, waiting for another player to join',
                 'command':'wait'
             }
@@ -113,7 +113,7 @@ class TicTacToeGame():
             self.playerTwo['address'] = address
             self.playerTwo['piece'] = 'O'
             message1 = {
-                'status':'OK',
+                'status':'WAIT',
                 'message':'added to existing  game as ' + name  + ' with piece O. Player 1\'s turn',
                 'command': None
             }
@@ -169,3 +169,29 @@ class TicTacToeGame():
 
     def getID(self):
         return self.ID
+
+
+    def getPlayer(self, playerToGet):
+        if playerToGet == self.playerOne['name']:
+            return self.playerOne
+        elif playerToGet == self.playerTwo['name']:
+            return self.playerTwo
+        else:
+            return False
+
+    def getOtherPlayer(self, oppositePlayer):
+        if oppositePlayer == self.playerOne['name']:
+            return self.playerTwo
+        elif oppositePlayer == self.playerTwo['name']:
+            return self.playerOne
+        else:
+            return False
+
+    def getPlayerOne(self):
+        return self.playerOne
+
+    def getPlaterTwo(self):
+        return self.playerTwo
+
+
+

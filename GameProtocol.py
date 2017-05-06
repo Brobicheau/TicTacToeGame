@@ -36,7 +36,7 @@ class GameProtocol():
 
     def GAMES(self):
         message ={
-            'request':'GAME'
+            'request':'GAMES'
         }
         self.socket.sendto(json.dumps(message).encode('utf-8'), self.server_address)
         return len(message)
@@ -68,7 +68,9 @@ class GameProtocol():
 
         # if auto matchis true, change it to false
         if self.auto_match:
-            self.automatch = False
+            print('automatch off')
+            self.auto_match = False
         # if its false, change it to true
         else:
+            print('automatch on')
             self.auto_match = True

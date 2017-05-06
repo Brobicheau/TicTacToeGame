@@ -53,7 +53,11 @@ class ThreadServer():
             # keep listening
             while True:
                 # get data as bytes
-                bytes = client.recv(1024)
+                if not client._closed:
+                    print('client stil active')
+                    bytes = client.recv(1024)
+                else:
+                    break
 
                 # convert to a json object
                 data = json.loads(bytes);
@@ -68,9 +72,10 @@ class ThreadServer():
                     break
         finally:
             # always make sure connection is closed
-            gameMaster.endFromDisconnect(self.username[id])
-            print('closing')
-            client.close()
+            if not client._closed:
+                gameMaster.endFromDisconnect(self.username[id])
+                print('closing')
+                client.close()
 
     # -- ParseData --
     # Data: Data received from the user, contains commands and information on how to excecute them
@@ -94,26 +99,27 @@ class ThreadServer():
                 gameMaster.place(data['place'], self.username[id])
             else:
                 message = {
-                    'status':'OK',
+                    'status':'ERROR',
                     'message':'Not logged in, please try again'
                 }
                 client.sendto(json.dumps(message).encode('utf-8'), address)
 
         # else if it is a who request
-        elif data.request == 'WHO':
-            self.gameMaster.place
+        elif data['request'] == 'WHO':
+            gameMaster.listPlayers(self.username[id])
 
         # else if it is an exit request
-        elif data.request == 'EXIT':
-            self.gameMaster.exit()
+        elif data['request'] == 'EXIT':
+            print(self.username[id] + 'in server')
+            gameMaster.exit(self.username[id])
 
         # else if it is a games request
-        elif data.request == 'GAMES':
-            self.gameMaster.games()
+        elif data['request'] == 'GAMES':
+            gameMaster.listGames(self.username[id])
 
         # else if it is a play request
         elif data['request'] == 'PLAY':
-            self.gameMaster.play(self.username[id], data['player'])
+            gameMaster.play(self.username[id], data['player'])
 
 
 

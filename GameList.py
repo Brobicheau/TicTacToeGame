@@ -5,6 +5,15 @@ class GameList():
     def __init__(self):
         self.head = None
 
+    def getList(self):
+        node = self.head
+        list = []
+        while node:
+            list.append(node)
+            node = node.next()
+        return list
+
+
     def getGameWithPlayer(self, player):
 
         node = self.head
