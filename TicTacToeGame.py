@@ -156,7 +156,7 @@ class TicTacToeGame():
             self.playerOne['piece'] = 'X'
             message = {
                 'status':'WAIT',
-                'message': 'created Game, waiting for another player to join',
+                'message': 'created Game, You are Player 1 with name ' + name +', and piece X.\n\n Now waiting for another player to join',
                 'command':'wait'
             }
             self.playerOne['client'].sendto(json.dumps(message).encode('utf-8'), self.playerOne['address'])
@@ -167,7 +167,7 @@ class TicTacToeGame():
             self.playerTwo['piece'] = 'O'
             message1 = {
                 'status':'WAIT',
-                'message':'added to existing  game as ' + name  + ' with piece O. Player 1\'s turn',
+                'message':'added to existing game as Player 2 with username ' + name+ ', and piece O. Player 1\'s turn',
                 'command': None
             }
             self.playerTwo['client'].sendto(json.dumps(message1).encode('utf-8'), self.playerTwo['address'])
@@ -177,7 +177,8 @@ class TicTacToeGame():
                 'command':None
             }
             # TODO: PROBEMS HERE
-            self.playerOne['client'].sendto(json.dumps(message2).encode('utf-8'), self.playerOne['address'])
+            if self.playerOne['client']:
+                self.playerOne['client'].sendto(json.dumps(message2).encode('utf-8'), self.playerOne['address'])
         return
 
     # Displays the board for the user (not used on serverside, probably gunna remove this)

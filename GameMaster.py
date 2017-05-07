@@ -66,7 +66,7 @@ class GameMaster():
             self.gameList.removeGame(node.getGame())
             del self.playerList[disconnectedUser]
             self.playerNames.remove(disconnectedUser)
-            if self.gameOpen is node.getGame():
+            if self.gameOpen.getGame() is node.getGame():
                 self.gameOpen = None
         except KeyError:
             print('couldnt delete disconnected game')
@@ -90,7 +90,7 @@ class GameMaster():
             # add the player to the node and the game for searching purposes
             node.addPlayer(username)
             game.addPlayer(self.playerList[username][self.client], self.playerList[username][self.address], username)
-
+            self.playerList[username][self.status] = 'busy'
             # Make sure to set the game open to none
             self.gameOpen = None
 
@@ -112,7 +112,7 @@ class GameMaster():
                 # add the player to the game and the node
                 newNode.addPlayer(username)
                 newGame.addPlayer(self.playerList[username][self.client], self.playerList[username][self.address], username)
-
+                self.playerList[username][self.status] = 'busy'
 
     # --Login--
     # sets username if the username is not in use,

@@ -4,7 +4,6 @@ import threading
 import time
 import sys
 
-#import echo as echo
 
 from GameProtocol import GameProtocol
 
@@ -12,7 +11,7 @@ def waitForMessages():
     global not_done
     while not_done:
         try:
-            data = s.recv(1024)
+            data = s.recv(1024).decode('utf-8')
             message = json.loads(data)
             #lock.acquire()
             if message['status'] == "WAIT":
@@ -53,7 +52,7 @@ not_done = True
 prompt = True
 automatch = True
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_address = ('localhost',10000)
+server_address = ('localhost',8080)
 s.connect(server_address)
 lock = threading.Lock()
 
@@ -77,6 +76,8 @@ pro = {
 
 
 threading.Thread(target=waitForMessages, args={}).start()
+
+print("Welcome to the TicTacToe Game!\n\nyou may now begin entering commands, type 'help' to get list of commands\n\n")
 
 try:
     while not_done:

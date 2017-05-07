@@ -30,7 +30,7 @@ class ThreadServer():
     def startNewClient(self):
 
         # listen with the socket
-        self.s.listen()
+        self.s.listen(20)
 
         # loop forever
         while True:
