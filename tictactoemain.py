@@ -8,49 +8,28 @@ import sys
 
 from GameProtocol import GameProtocol
 
-
-not_done = True
-
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_address = ('localhost',10000)
-s.connect(server_address)
-lock = threading.Lock()
-
-p = GameProtocol(s, server_address)
-pro = {
-    'games': p.GAMES,
-    'place': p.PLACE,
-    'exit': p.EXIT,
-    'play': p.PLAY,
-    'who': p.WHO,
-    'login': p.LOGIN,
-    'observe':p.OBSERVE,
-    'unobserve': p.UNOBSERVE,
-    'comment': p.COMMENT,
-    'automatch': p.automatch
-}
-
-
-
 def waitForMessages():
     global not_done
     while not_done:
-        print('in thread')
-        data = s.recv(1024)
-        message = json.loads(data)
-        #lock.acquire()
-        if message['status'] == "WAIT":
-            print(message['message'])
-        elif message['status'] == "OK":
-            print(message['message'])
-        elif message['status'] == "ERROR":
-            print(message['message'])
-        elif message['status'] == 'KILL':
-  #          lock.aquire()
+        try:
+            data = s.recv(1024)
+            message = json.loads(data)
+            #lock.acquire()
+            if message['status'] == "WAIT":
+                print(message['message'])
+            elif message['status'] == "OK":
+                print(message['message'])
+            elif message['status'] == "ERROR":
+                print(message['message'])
+            elif message['status'] == 'KILL':
+                lock.acquire()
+                not_done = False
+                lock.release()
+        except ConnectionResetError:
+            print("Error: Connection to server ended, exiting client")
             not_done = False
-   #         lock.release()
-        #print(message['message'], flush=True)
-        #lock.release()
+
+
 
 def printHelp():
     print("login <string> - Takes user inputted string as argument. Places user into server, and if Automatch is enable it will automatically pairs with another player.")
@@ -62,11 +41,49 @@ def printHelp():
     print("observe <int> - Takes gameID as argument. Allows the user to watch an ongoing game")
     print("unobserve <int> - Takes gameID as argument. If user is observing the entered gameID the user will be disconected from that game")
 
+def changePrompt():
+    global prompt
+    if prompt:
+        prompt = False
+    else:
+        prompt = True
+
+
+not_done = True
+prompt = True
+automatch = True
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_address = ('localhost',10000)
+s.connect(server_address)
+lock = threading.Lock()
+
+p = GameProtocol(s, server_address)
+
+pro = {
+    'games': p.GAMES,
+    'place': p.PLACE,
+    'exit': p.EXIT,
+    'play': p.PLAY,
+    'who': p.WHO,
+    'login': p.LOGIN,
+    'observe':p.OBSERVE,
+    'unobserve': p.UNOBSERVE,
+    'comment': p.COMMENT,
+    'automatch': p.automatch,
+    'prompt': changePrompt
+}
+
+
+
+
 threading.Thread(target=waitForMessages, args={}).start()
 
 try:
     while not_done:
-        user_input = input('Please Enter Command: ')
+        if prompt:
+            user_input = input()
+        else:
+            user_input = input("Please Enter Command: ")
         commands = user_input.split(' ')
         amount_expected = 0
         try:
@@ -78,9 +95,9 @@ try:
                 amount_expected = pro[commands[0]]()
             else:
                 print("Error: Improper input, please try again")
-        except TypeError:
-            print('Exception: Error when processing request')
-            print(TypeError)
+        except (TypeError, KeyError):
+
+            print("Error: Not valid input")
 
         time.sleep(.5)
 

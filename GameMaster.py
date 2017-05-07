@@ -51,20 +51,27 @@ class GameMaster():
 
         try:
             node = self.gameList.getGameWithPlayer(disconnectedUser)
-            nameToNotify = node.getP1()
-            if nameToNotify is disconnectedUser:
-                nameToNotify = node.getP2()
-            playerToNotify = self.playerList[nameToNotify]
-            playerToNotify[self.status] = 'available'
-            message = {
-                'status':'OK',
-                'message': 'Other player disconnected, you have been changed to available'
-            }
-            playerToNotify['client'].sendto(json.dumps(message).encode('utf-8'), playerToNotify['address'])
+            if node:
+                otherPlayer = node.getOtherPlayer(disconnectedUser)
+            else: return
+            if otherPlayer:
+                playerToNotify = self.playerList[otherPlayer]
+                playerToNotify[self.status] = 'available'
+                message = {
+                    'status':'OK',
+                    'message': 'Other player disconnected, you have been changed to available'
+                }
+                playerToNotify[self.client].sendto(json.dumps(message).encode('utf-8'), playerToNotify[self.address])
             self.gameCount -= 1
             self.gameList.removeGame(node.getGame())
-        except:
+            del self.playerList[disconnectedUser]
+            self.playerNames.remove(disconnectedUser)
+            if self.gameOpen is node.getGame():
+                self.gameOpen = None
+        except KeyError:
             print('couldnt delete disconnected game')
+        except ConnectionResetError:
+            print('connection was reset')
 
     # -- autoPlay --
     # Username: username of the current user of are trying to start a game with
@@ -112,7 +119,6 @@ class GameMaster():
     #  we add it to the player list and set its status to available.
     # if automatch is on we set them up with a game. otherwise just return
     def login(self, client, address, username, automatch):
-        print('in login')
         # TODO: Check for duplicate client/addresses so username is changed
         # Loop through the list of players and check if the username is already in use
         for i in self.playerNames:

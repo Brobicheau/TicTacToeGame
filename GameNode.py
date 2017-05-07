@@ -34,9 +34,14 @@ class GameNode():
         else:
             self.p1 = player
 
+    def getOtherPlayer(self, player):
+        if self.p1 == player:
+            return self.p2
+        else:
+            return self.p1
+
     def checkPlayers(self, player):
-        print(self.p1)
-        print(self.p2)
+
         if self.p1 == player:
             return True
         elif self.p2 == player:

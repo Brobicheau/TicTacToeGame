@@ -103,29 +103,36 @@ class TicTacToeGame():
     def place(self, move, player):
         print(player + "s turn")
         if self.turn['name'] == player:
-            self.moves +=1
-            self.board[int(move)-1] = self.turn['piece']
-            board = self.displayBoard()
-            if self.checkForWin():
-                message = {'status':'OK',
-                           'message':self.turn['name'] + ' has won the game!\n\n' + board,
-                           'board':self.board,
-                           'command':'display'
-                           }
-                self.turn['client'].sendto(json.dumps(message).encode('utf-8'), self.turn['address'])
-                self.switchTurn()
-                self.turn['client'].sendto(json.dumps(message).encode('utf-8'),self.turn['address'])
-                self.endGame()
+            if self.board[int(move)-1] == '*':
+                self.moves +=1
+                self.board[int(move)-1] = self.turn['piece']
+                board = self.displayBoard()
+                if self.checkForWin():
+                    message = {'status':'OK',
+                               'message':self.turn['name'] + ' has won the game!\n\n' + board,
+                               'board':self.board,
+                               'command':'display'
+                               }
+                    self.turn['client'].sendto(json.dumps(message).encode('utf-8'), self.turn['address'])
+                    self.switchTurn()
+                    self.turn['client'].sendto(json.dumps(message).encode('utf-8'),self.turn['address'])
+                    self.endGame()
+                else:
+                    message = {'status':'OK',
+                               'message':self.turn['name'] + ' has made a move\n\n' + board,
+                               'board':self.board,
+                               'command':'display'
+                               }
+                    self.turn['client'].sendto(json.dumps(message).encode('utf-8'), self.turn['address'])
+                    self.switchTurn()
+                    self.turn['client'].sendto(json.dumps(message).encode('utf-8'),self.turn['address'])
+                    self.sendToObservers(message)
             else:
-                message = {'status':'OK',
-                           'message':self.turn['name'] + ' has made a move\n\n' + board,
-                           'board':self.board,
-                           'command':'display'
-                           }
-                self.turn['client'].sendto(json.dumps(message).encode('utf-8'), self.turn['address'])
-                self.switchTurn()
-                self.turn['client'].sendto(json.dumps(message).encode('utf-8'),self.turn['address'])
-                self.sendToObservers(message)
+                response = {
+                    'status':'ERROR',
+                    'message':'Piece already there, pick another move'
+                }
+                self.turn['client'].sendto(json.dumps(response).encode('utf-8'), self.turn['address'])
 
         else:
             other = self.otherPlayer()
@@ -169,6 +176,7 @@ class TicTacToeGame():
                 'message':'Player 2 has joined, your turn',
                 'command':None
             }
+            # TODO: PROBEMS HERE
             self.playerOne['client'].sendto(json.dumps(message2).encode('utf-8'), self.playerOne['address'])
         return
 

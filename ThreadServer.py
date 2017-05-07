@@ -69,6 +69,12 @@ class ThreadServer():
                     # Otherwise there has been an error, disconnect from client and break loop
                     print('client disconnected')
                     break
+        except ConnectionResetError:
+            # always make sure connection is closed
+            if not client._closed:
+                gameMaster.endFromDisconnect(self.username[id])
+                print('closing from disconnect')
+                client.close()
         finally:
             # always make sure connection is closed
             if not client._closed:
@@ -86,7 +92,6 @@ class ThreadServer():
 
         # if it is a login request
         if data['request'] == 'LOGIN':
-            print('in login')
             self.username[id] = data['login']
 
             # send a login command to the gamemaster with the client, address, username and automatch information

@@ -25,7 +25,7 @@ class GameProtocol():
         # return the length of the message
         return len(message)
 
-
+    # call a place request to the server with the move you user intends to make
     def PLACE(self, move):
         message = {
             'request':'PLACE',
@@ -34,6 +34,7 @@ class GameProtocol():
         self.socket.sendto(json.dumps(message).encode('utf-8'), self.server_address)
         return len(message)
 
+    # Makes a request to the server for the list of active games
     def GAMES(self):
         message ={
             'request':'GAMES'
@@ -41,6 +42,7 @@ class GameProtocol():
         self.socket.sendto(json.dumps(message).encode('utf-8'), self.server_address)
         return len(message)
 
+    # makes a reques to the server for the list of players
     def WHO(self):
         message = {
             'request':'WHO',
@@ -48,6 +50,7 @@ class GameProtocol():
         self.socket.sendto(json.dumps(message).encode('utf-8'), self.server_address)
         return len(message)
 
+    # Makes a request to the server to play with a specific player
     def PLAY(self, player):
         message = {
             'request':'PLAY',
@@ -56,6 +59,7 @@ class GameProtocol():
         self.socket.sendto(json.dumps(message).encode('utf-8'), self.server_address)
         return len(message)
 
+    # Makes a request to the server to exit this users current game. Will also exit client
     def EXIT(self):
         message = {
             'request':'EXIT'
@@ -63,6 +67,7 @@ class GameProtocol():
         self.socket.sendto(json.dumps(message).encode('utf-8'), self.server_address)
         return len(message)
 
+    # makes a request to the server to observe a game with the given ID
     def OBSERVE(self, id):
         message = {
             'request':'OBSERVE',
@@ -70,6 +75,7 @@ class GameProtocol():
         }
         self.socket.sendto(json.dumps(message).encode('utf-8'), self.server_address)
 
+    # makes a reuqest to the server to stop observing a game with the given ID
     def UNOBSERVE(self, id):
         message = {
             'request':'UNOBSERVE',
@@ -77,6 +83,7 @@ class GameProtocol():
         }
         self.socket.sendto(json.dumps(message).encode('utf-8'), self.server_address)
 
+    # Makes a request to the server to post a comment on the game you are observing, which is available for all to see
     def COMMENT(self, comment):
         message = {
             'request':'COMMENT',
