@@ -15,14 +15,8 @@ class ThreadServer():
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.s.bind((self.host, self.port))
-        # self.gm = {
-        #     'PLACE':self.gm.place,
-        #     'GAMES': self.pm.games,
-        #     'LOGIN': self.pm.login,
-        #     'WHO' : self.pm.who,
-        #     'EXIT' : self.pm.exit,
-        #     'PLAY' : self.pm.play
-        # }
+        self.lock = threading.Lock()
+
 
     # -- statNewClient
     # --Function--
@@ -34,6 +28,7 @@ class ThreadServer():
 
         # loop forever
         while True:
+
             # When we get a new client request
             client, address = self.s.accept()
 
@@ -50,12 +45,15 @@ class ThreadServer():
     # listens for messages from user, and sends them to a parser that will issue commands to the GameMaster
     def listening(self, client, address, id):
         try:
+
             # keep listening
             while True:
+
                 # get data as bytes
                 if not client._closed:
                     bytes = client.recv(1024).decode('utf-8')
                 else:
+                # if theres an issue with obtaining the message we kill the thread (usually server side error)
                     break
 
                 # convert to a json object
@@ -69,12 +67,16 @@ class ThreadServer():
                     # Otherwise there has been an error, disconnect from client and break loop
                     print('client disconnected')
                     break
+
+        # If theres a connection error we need to make sure the connected is totally closed
         except ConnectionResetError:
             # always make sure connection is closed
             if not client._closed:
                 gameMaster.endFromDisconnect(self.username[id])
                 print('closing from disconnect')
                 client.close()
+
+        # ALWAYS make sure the connection is closed
         finally:
             # always make sure connection is closed
             if not client._closed:
@@ -89,6 +91,19 @@ class ThreadServer():
     # -- Function --
     # Parses Data received from the user, and decide what commands to send to the GameMaster
     def parseData(self, data, client, address, id):
+        self.lock.acquire()
+        # Every if else statement will either excecute the command if it is propery made,
+        # or send an error message back to the user if there is a problem.
+        # The only block that will be different is the login block.
+        # The reason for this is because the user needs to have logged in before
+        # they can do anything else.
+        # The psudo code for the rest of the if else blocks will look like this:
+        # ---------------------
+        # if there is a proper request from the incoming message
+        #   if the user is already logged in
+        #       send request to the server
+        #   else
+        #       send error message back to the user
 
         # if it is a login request
         if data['request'] == 'LOGIN':
@@ -97,8 +112,8 @@ class ThreadServer():
             # send a login command to the gamemaster with the client, address, username and automatch information
             gameMaster.login(client, address, data['login'], data['automatch'])
 
-        # else if it is a place request
         elif data['request'] == 'PLACE':
+
             if self.username[id]:
                 gameMaster.place(data['place'], self.username[id])
             else:
@@ -108,7 +123,6 @@ class ThreadServer():
                 }
                 client.sendto(json.dumps(message).encode('utf-8'), address)
 
-        # else if it is a who request
         elif data['request'] == 'WHO':
             if self.username[id]:
                 gameMaster.listPlayers(self.username[id])
@@ -119,7 +133,6 @@ class ThreadServer():
                 }
                 client.sendto(json.dumps(message).encode('utf-8'), address)
 
-        # else if it is an exit request
         elif data['request'] == 'EXIT':
             if self.username[id]:
                 gameMaster.exit(self.username[id])
@@ -130,7 +143,6 @@ class ThreadServer():
                 }
                 client.sendto(json.dumps(message).encode('utf-8'), address)
 
-        # else if it is a games request
         elif data['request'] == 'GAMES':
             if self.username[id]:
                 gameMaster.listGames(self.username[id])
@@ -141,7 +153,6 @@ class ThreadServer():
                 }
                 client.sendto(json.dumps(message).encode('utf-8'), address)
 
-        # else if it is a play request
         elif data['request'] == 'PLAY':
             if self.username[id]:
                 gameMaster.play(self.username[id], data['player'])
@@ -181,5 +192,5 @@ class ThreadServer():
                     'message': 'Not logged in, please try again'
                 }
                 client.sendto(json.dumps(message).encode('utf-8'), address)
-
+        self.lock.release()
 

@@ -27,6 +27,7 @@ class GameMaster():
         self.client = 1
         self.address = 2
         self.gameObserving = 3
+        self.automatch = 4
         self.lock = threading.Lock()
 
     def endGame(self, gameToEnd):
@@ -43,6 +44,11 @@ class GameMaster():
             player2[self.status] = 'available'
             self.gameCount -= 1
             self.gameList.removeGame(gameToEnd)
+            if player1[self.automatch]:
+                print('automatching player 1 again')
+                self.autoPlay(player1Name)
+            if player2[self.automatch]:
+                self.autoPlay(player2Name)
         except:
             print ('couldnt delete game')
         self.lock.release()
@@ -69,7 +75,7 @@ class GameMaster():
             if self.gameOpen.getGame() is node.getGame():
                 self.gameOpen = None
         except KeyError:
-            print('couldnt delete disconnected game')
+            print('Couldnt find user in a game to delete')
         except ConnectionResetError:
             print('connection was reset')
 
@@ -89,7 +95,7 @@ class GameMaster():
 
             # add the player to the node and the game for searching purposes
             node.addPlayer(username)
-            game.addPlayer(self.playerList[username][self.client], self.playerList[username][self.address], username)
+            game.addPlayer(self.playerList[username][self.client], self.playerList[username][self.address], username, True)
             self.playerList[username][self.status] = 'busy'
             # Make sure to set the game open to none
             self.gameOpen = None
@@ -111,7 +117,7 @@ class GameMaster():
 
                 # add the player to the game and the node
                 newNode.addPlayer(username)
-                newGame.addPlayer(self.playerList[username][self.client], self.playerList[username][self.address], username)
+                newGame.addPlayer(self.playerList[username][self.client], self.playerList[username][self.address], username, True)
                 self.playerList[username][self.status] = 'busy'
 
     # --Login--
@@ -134,7 +140,7 @@ class GameMaster():
         self.playerNames.append(username)
 
         # save information about the client
-        self.playerList[username] = ['available', client, address, '']
+        self.playerList[username] = ['available', client, address, '', automatch]
 
         # if the user wants to be matched automatically
         if automatch:
@@ -203,7 +209,7 @@ class GameMaster():
             player2 = self.playerList[answeringPlayer]
         else:
             message = {
-                'status': 'error',
+                'status':'ERROR',
                 'message':'could not find matching player'
             }
             player1[self.client].sendto(json.dumps(message).encode('utf-8'), player1[self.address])
@@ -214,14 +220,14 @@ class GameMaster():
             # Start a new game and add both players to it
             newNode = self.newGame()
             newNode.addPlayer(askingPlayer)
-            newNode.getGame().addPlayer(player1[self.client], player1[self.address], askingPlayer)
+            newNode.getGame().addPlayer(player1[self.client], player1[self.address], askingPlayer, False)
             newNode.addPlayer(answeringPlayer)
-            newNode.getGame().addPlayer(player2[self.client], player2[self.address], answeringPlayer)
+            newNode.getGame().addPlayer(player2[self.client], player2[self.address], answeringPlayer, False)
 
         # else if the player is busy, send an error message
         elif player2[self.status] == 'busy':
             message = {
-                'status':'WAIT',
+                'status':'OK',
                 'message':'player busy'
             }
             player1[self.client].sendto(json.dumps(message).encode('utf-8'), player1[self.address])
