@@ -36,10 +36,54 @@ class TicTacToeGame():
         self.ID = id
         self.turn = self.playerOne
         self.gm = GameMaster
+        self.observers = {}
 
 
     def endGame(self):
         self.gm.endGame(self)
+
+    def comment(self, username, comment):
+        fullComment = username + ': ' + comment
+        message = {
+            'status':'OK',
+            'message': fullComment
+        }
+        self.sendToObservers(message)
+
+    def sendToObservers(self, message):
+        for user in self.observers:
+            observer = self.observers[user]
+            observer['client'].sendto(json.dumps(message).encode('utf-8'), observer['address'])
+
+    def addObserver(self, client, address, username):
+        if username in self.observers:
+            observer = self.observers[username]
+            response = {
+                'status':'ERROR',
+                'message':'You are already observing this game'
+            }
+            observer['client'].sendto(json.dumps(response).encode('utf-8'), observer['address'])
+        else:
+            self.observers[username] = {
+                'client':client,
+                'address':address
+            }
+            observer = self.observers[username]
+            response = {
+                'status':'ERROR',
+                'message':'Successfuly added as observer to game ' + str(self.ID)
+            }
+            observer['client'].sendto(json.dumps(response).encode('utf-8'), observer['address'])
+
+    def removeObserver(self, observerToRemove):
+        if observerToRemove in self.observers:
+            response = {
+                'status':'OK',
+                'message':'Removed from observing game ' + str(self.getID())
+            }
+            observer = self.observers[observerToRemove]
+            observer['client'].sendto(json.dumps(response).encode('utf-8'), observer['address'])
+            del self.observers[observerToRemove]
 
     # switches the turn value after a player has made a valid turn
     def switchTurn(self):
@@ -81,6 +125,8 @@ class TicTacToeGame():
                 self.turn['client'].sendto(json.dumps(message).encode('utf-8'), self.turn['address'])
                 self.switchTurn()
                 self.turn['client'].sendto(json.dumps(message).encode('utf-8'),self.turn['address'])
+                self.sendToObservers(message)
+
         else:
             other = self.otherPlayer()
             message = {'status':'WAIT',

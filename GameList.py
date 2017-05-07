@@ -36,7 +36,7 @@ class GameList():
         prev = None
 
         while node:
-            if node.getID() == ID:
+            if int(node.getID()) == int(ID):
                 return node
             else:
                 prev = node

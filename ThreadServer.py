@@ -54,8 +54,7 @@ class ThreadServer():
             while True:
                 # get data as bytes
                 if not client._closed:
-                    print('client stil active')
-                    bytes = client.recv(1024)
+                    bytes = client.recv(1024).decode('utf-8')
                 else:
                     break
 
@@ -100,27 +99,82 @@ class ThreadServer():
             else:
                 message = {
                     'status':'ERROR',
-                    'message':'Not logged in, please try again'
+                    'message':'Not logged in, please try again after logging in'
                 }
                 client.sendto(json.dumps(message).encode('utf-8'), address)
 
         # else if it is a who request
         elif data['request'] == 'WHO':
-            gameMaster.listPlayers(self.username[id])
+            if self.username[id]:
+                gameMaster.listPlayers(self.username[id])
+            else:
+                message = {
+                    'status': 'ERROR',
+                    'message': 'Not logged in, please try again'
+                }
+                client.sendto(json.dumps(message).encode('utf-8'), address)
 
         # else if it is an exit request
         elif data['request'] == 'EXIT':
-            print(self.username[id] + 'in server')
-            gameMaster.exit(self.username[id])
+            if self.username[id]:
+                gameMaster.exit(self.username[id])
+            else:
+                message = {
+                    'status': 'ERROR',
+                    'message': 'Not logged in, please try again'
+                }
+                client.sendto(json.dumps(message).encode('utf-8'), address)
 
         # else if it is a games request
         elif data['request'] == 'GAMES':
-            gameMaster.listGames(self.username[id])
+            if self.username[id]:
+                gameMaster.listGames(self.username[id])
+            else:
+                message = {
+                    'status': 'ERROR',
+                    'message': 'Not logged in, please try again'
+                }
+                client.sendto(json.dumps(message).encode('utf-8'), address)
 
         # else if it is a play request
         elif data['request'] == 'PLAY':
-            gameMaster.play(self.username[id], data['player'])
+            if self.username[id]:
+                gameMaster.play(self.username[id], data['player'])
+            else:
+                message = {
+                    'status': 'ERROR',
+                    'message': 'Not logged in, please try again'
+                }
+                client.sendto(json.dumps(message).encode('utf-8'), address)
 
+        elif data['request'] == 'OBSERVE':
+            if self.username[id]:
+                gameMaster.addObserver(data['ID'], client, address, self.username[id])
+            else:
+                message = {
+                    'status': 'ERROR',
+                    'message': 'Not logged in, please try again'
+                }
+                client.sendto(json.dumps(message).encode('utf-8'), address)
 
+        elif data['request'] == 'UNOBSERVE':
+            if self.username[id]:
+                gameMaster.removeObserver(data['ID'], self.username[id])
+            else:
+                message = {
+                    'status': 'ERROR',
+                    'message': 'Not logged in, please try again'
+                }
+                client.sendto(json.dumps(message).encode('utf-8'), address)
+
+        elif data['request'] == 'COMMENT':
+            if self.username[id]:
+                gameMaster.comment(self.username[id], data['comment'])
+            else:
+                message = {
+                    'status': 'ERROR',
+                    'message': 'Not logged in, please try again'
+                }
+                client.sendto(json.dumps(message).encode('utf-8'), address)
 
 

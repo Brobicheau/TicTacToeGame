@@ -24,6 +24,9 @@ pro = {
     'play': p.PLAY,
     'who': p.WHO,
     'login': p.LOGIN,
+    'observe':p.OBSERVE,
+    'unobserve': p.UNOBSERVE,
+    'comment': p.COMMENT,
     'automatch': p.automatch
 }
 

@@ -26,6 +26,7 @@ class GameMaster():
         self.status = 0
         self.client = 1
         self.address = 2
+        self.gameObserving = 3
         self.lock = threading.Lock()
 
     def endGame(self, gameToEnd):
@@ -127,7 +128,7 @@ class GameMaster():
         self.playerNames.append(username)
 
         # save information about the client
-        self.playerList[username] = ['available', client, address]
+        self.playerList[username] = ['available', client, address, '']
 
         # if the user wants to be matched automatically
         if automatch:
@@ -289,3 +290,33 @@ class GameMaster():
         print (returnList)
         player = self.playerList[askingUsername]
         player[self.client].sendto(json.dumps(response).encode('utf-8'), player[self.address])
+
+    def addObserver(self, ID, client, address, username):
+        node = self.gameList.getGameWithID(ID)
+        user = self.playerList[username]
+
+        if node:
+            game = node.getGame()
+            game.addObserver(client, address, username)
+            user[self.gameObserving] = game.getID()
+        else:
+            response = {
+                'status':'ERROR',
+                'message':'Couldnt find game with ID ' + ID
+            }
+            user[self.client].sendto(json.dumps(response).encode('utf-8'), user[self.address])
+
+
+    def removeObserver(self, ID, username):
+        node = self.gameList.getGameWithID(ID)
+        user = self.playerList[username]
+        user[self.gameObserving] = ''
+        game = node.getGame()
+        game.removeObserver(username)
+
+    def comment(self, username ,comment):
+        player = self.playerList[username]
+        gameID = player[self.gameObserving]
+        node = self.gameList.getGameWithID(gameID)
+        game = node.getGame()
+        game.comment(username, comment)

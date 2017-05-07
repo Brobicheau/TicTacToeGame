@@ -15,6 +15,9 @@ class GameNode():
     def getGame(self):
         return self.game
 
+    def getID(self):
+        return self.id
+
     def getP1(self):
         return self.p1
 

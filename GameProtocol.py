@@ -63,6 +63,27 @@ class GameProtocol():
         self.socket.sendto(json.dumps(message).encode('utf-8'), self.server_address)
         return len(message)
 
+    def OBSERVE(self, id):
+        message = {
+            'request':'OBSERVE',
+            'ID':id
+        }
+        self.socket.sendto(json.dumps(message).encode('utf-8'), self.server_address)
+
+    def UNOBSERVE(self, id):
+        message = {
+            'request':'UNOBSERVE',
+            'ID':id
+        }
+        self.socket.sendto(json.dumps(message).encode('utf-8'), self.server_address)
+
+    def COMMENT(self, comment):
+        message = {
+            'request':'COMMENT',
+            'comment':comment
+        }
+        self.socket.sendto(json.dumps(message).encode('utf-8'), self.server_address)
+
     # used for changing auto match preferences
     def automatch(self):
 
