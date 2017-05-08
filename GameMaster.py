@@ -245,6 +245,7 @@ class GameMaster():
             newNode.getGame().addPlayer(player1[self.client], player1[self.address], askingPlayer, False)
             newNode.addPlayer(answeringPlayer)
             newNode.getGame().addPlayer(player2[self.client], player2[self.address], answeringPlayer, False)
+            self.lock.release()
 
         # else if the player is busy, send an error message
         elif player2[self.status] == 'busy':
