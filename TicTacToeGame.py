@@ -332,7 +332,7 @@ class TicTacToeGame():
     # Checks to see if the given game and this one are the same. Checks via gameid
     def isEqual(self, compare):
 
-        if self.board == compare.getID():
+        if self.ID == compare.getID():
             return True
         else:
             return False
@@ -361,7 +361,7 @@ class TicTacToeGame():
     def getPlayerOne(self):
         return self.playerOne
 
-    def getPlaterTwo(self):
+    def getPlayerTwo(self):
         return self.playerTwo
 
 

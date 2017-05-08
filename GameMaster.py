@@ -30,6 +30,7 @@ class GameMaster():
         self.automatch = 4
         self.lock = threading.Lock()
 
+
     def endGame(self, gameToEnd):
 
         # Do stuff under here
@@ -43,18 +44,21 @@ class GameMaster():
             player2 = self.playerList[player2Name]
             player2[self.status] = 'available'
             self.gameCount -= 1
-            self.gameList.removeGame(gameToEnd)
+            if not self.gameList.removeGame(gameToEnd):
+                print("couldnt delete game")
+            self.lock.release()
             if player1[self.automatch]:
                 print('automatching player 1 again')
                 self.autoPlay(player1Name)
             if player2[self.automatch]:
                 self.autoPlay(player2Name)
+
         except:
             print ('couldnt delete game')
-        self.lock.release()
+
 
     def endFromDisconnect(self, disconnectedUser):
-
+        self.lock.acquire()
         try:
             node = self.gameList.getGameWithPlayer(disconnectedUser)
             if node:
@@ -78,6 +82,9 @@ class GameMaster():
             print('Couldnt find user in a game to delete')
         except ConnectionResetError:
             print('connection was reset')
+        finally:
+            self.lock.release()
+
 
     # -- autoPlay --
     # Username: username of the current user of are trying to start a game with
@@ -85,7 +92,7 @@ class GameMaster():
     # This function will create a new game with a single player if there are none available
     # or it will add the player to a game with only one player in it.
     def autoPlay(self, username):
-
+        self.lock.acquire()
         # If there is a game currently open for joining
         if self.gameOpen:
 
@@ -99,13 +106,15 @@ class GameMaster():
             self.playerList[username][self.status] = 'busy'
             # Make sure to set the game open to none
             self.gameOpen = None
+            self.lock.release()
+
 
         # if there isnt a game currently open, make a new one!
         else:
-
+            self.lock.release()
             # make the new node containing a new game
             newNode = self.newGame()
-
+            self.lock.acquire()
             # make sure it worked
             if newNode:
 
@@ -119,19 +128,23 @@ class GameMaster():
                 newNode.addPlayer(username)
                 newGame.addPlayer(self.playerList[username][self.client], self.playerList[username][self.address], username, True)
                 self.playerList[username][self.status] = 'busy'
+            self.lock.release()
 
     # --Login--
     # sets username if the username is not in use,
     #  we add it to the player list and set its status to available.
     # if automatch is on we set them up with a game. otherwise just return
     def login(self, client, address, username, automatch):
-        # TODO: Check for duplicate client/addresses so username is changed
+
+        self.lock.acquire()
+        print('hello')
         # Loop through the list of players and check if the username is already in use
         for i in self.playerNames:
             if username ==  i:
                 #If it is, let the user know
                 response = {'status':'OK', 'message':'Username already in use, pick again'}
                 client.sendto(json.dumps(response).encode('utf-8'), address)
+                self.lock.release()
                 return 'Username already in use'
 
         # Otherwise, the username is not in user
@@ -145,11 +158,13 @@ class GameMaster():
         # if the user wants to be matched automatically
         if automatch:
             # match them automatically
+            self.lock.release()
             self.autoPlay(username)
         else:
             # otherwise return successful login response
             response = {'status': 'OK', 'message': 'Logged in'}
             client.sendto(json.dumps(response).encode('utf-8'), address)
+            self.lock.release()
 
 
     # -- newGame --
@@ -157,7 +172,7 @@ class GameMaster():
     # This function will create a new game, then add it to the game list.
     # it will return the node received from adding the game to the list
     def newGame(self):
-
+        self.lock.acquire()
         # make a new game with the game id of the current count
         game = TicTacToeGame(self.gameCount, self)
 
@@ -168,6 +183,7 @@ class GameMaster():
         node = self.gameList.addGame(game)
 
         # Return the node back to caller
+        self.lock.release()
         return node
 
 
@@ -180,19 +196,21 @@ class GameMaster():
     # game with the player, it will try to call place on the game with the move
     # otherwise it will return that it could not find an error
     def place(self, move, player):
-
+        self.lock.acquire()
         # Find the node with the player
         node = self.gameList.getGameWithPlayer(player)
 
         # if we found the node
         if node:
             # get the game and make the move
+            self.lock.release()
             game = node.getGame()
             game.place(move, player)
         # otherwise we couldnt locate the game with the specified player
         else:
             # return an error message
             print('couldnt find player')
+            self.lock.release()
 
     # - player --
     # askingPlayer: Player seeking to start a game with answeringPlayer
@@ -202,7 +220,8 @@ class GameMaster():
     # if they are, it will start a game with both the players, with the
     # asking player being player 1. Otherwise it will return an error
     def play(self, askingPlayer, answeringPlayer):
-        # TODO: Check if the players are actually in the list first
+
+        self.lock.acquire()
         # get the players from the player list
         player1 = self.playerList[askingPlayer]
         if askingPlayer in self.playerList and answeringPlayer in self.playerList:
@@ -218,7 +237,9 @@ class GameMaster():
         if player2[self.status] == 'available':
 
             # Start a new game and add both players to it
+            self.lock.release()
             newNode = self.newGame()
+            self.lock.acquire()
             newNode.addPlayer(askingPlayer)
             newNode.getGame().addPlayer(player1[self.client], player1[self.address], askingPlayer, False)
             newNode.addPlayer(answeringPlayer)
@@ -231,6 +252,7 @@ class GameMaster():
                 'message':'player busy'
             }
             player1[self.client].sendto(json.dumps(message).encode('utf-8'), player1[self.address])
+            self.lock.release()
 
         # Otherwise there is no specified player, so we send an error message
         else:
@@ -239,10 +261,10 @@ class GameMaster():
                 'message':'player not found'
             }
             player1[self.client].sendto(json.dumps(message).encode('utf-8'), player1[self.address])
-
+            self.lock.release()
 
     def exit(self, usernameToExit):
-
+        self.lock.acquire()
         print(self.playerList)
         print(usernameToExit + 'in exit')
         print(self.playerList)
@@ -254,7 +276,9 @@ class GameMaster():
         otherUsername = game.getOtherPlayer(usernameToExit)
         otherUsername = otherUsername['name']
         otherPlayer = self.playerList[otherUsername]
+        self.lock.release()
         self.endGame(game)
+        self.lock.acquire()
 
         exitResponse = {
             'status':'KILL',
@@ -269,9 +293,11 @@ class GameMaster():
         playerToExit[self.client].sendto(json.dumps(exitResponse).encode('utf-8'), playerToExit[self.address])
         playerToExit[self.client].close()
         del self.playerList[usernameToExit]
+        self.lock.release()
 
 
     def listPlayers(self, askingUsername):
+        self.lock.acquire()
         list = 'here is the list of players currently available\n\n'
 
         for i in self.playerList:
@@ -284,9 +310,11 @@ class GameMaster():
         }
         askingPlayer = self.playerList[askingUsername]
         askingPlayer[self.client].sendto(json.dumps(response).encode('utf-8'), askingPlayer[self.address])
+        self.lock.release()
+
 
     def listGames(self, askingUsername):
-
+        self.lock.acquire()
         list = self.gameList.getList()
         returnList = 'Here are all the currently active games:\n\n'
         for node in list:
@@ -302,8 +330,11 @@ class GameMaster():
         print (returnList)
         player = self.playerList[askingUsername]
         player[self.client].sendto(json.dumps(response).encode('utf-8'), player[self.address])
+        self.lock.release()
 
     def addObserver(self, ID, client, address, username):
+
+        self.lock.acquire()
         node = self.gameList.getGameWithID(ID)
         user = self.playerList[username]
 
@@ -317,18 +348,22 @@ class GameMaster():
                 'message':'Couldnt find game with ID ' + ID
             }
             user[self.client].sendto(json.dumps(response).encode('utf-8'), user[self.address])
-
+        self.lock.release()
 
     def removeObserver(self, ID, username):
+        self.lock.acquire()
         node = self.gameList.getGameWithID(ID)
         user = self.playerList[username]
         user[self.gameObserving] = ''
         game = node.getGame()
         game.removeObserver(username)
+        self.lock.release()
 
     def comment(self, username ,comment):
+        self.lock.acquire()
         player = self.playerList[username]
         gameID = player[self.gameObserving]
         node = self.gameList.getGameWithID(gameID)
         game = node.getGame()
         game.comment(username, comment)
+        self.lock.release()
