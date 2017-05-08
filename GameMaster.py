@@ -76,8 +76,9 @@ class GameMaster():
             self.gameList.removeGame(node.getGame())
             del self.playerList[disconnectedUser]
             self.playerNames.remove(disconnectedUser)
-            if self.gameOpen.getGame() is node.getGame():
-                self.gameOpen = None
+            if self.gameOpen:
+                if self.gameOpen.getGame() is node.getGame():
+                    self.gameOpen = None
         except KeyError:
             print('Couldnt find user in a game to delete')
         except ConnectionResetError:
