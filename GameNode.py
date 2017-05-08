@@ -1,4 +1,12 @@
 class GameNode():
+
+    # This is node elemetns for Gamelist
+    # ---------------------------
+    # Nex: next node in the list
+    # Game: The game for this node
+    # id: The id for the gmae in the ndoe
+    # p1: the first player
+    # p2: the second player
     def __init__(self, game):
         self.nex = None
         self.game = game

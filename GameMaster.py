@@ -30,23 +30,35 @@ class GameMaster():
         self.automatch = 4
         self.lock = threading.Lock()
 
-
+    # -- endGame --
+    # -----------------------------
+    # This will end the game given as a parameter,
+    # then either assign the players to a new game or set them as available
+    # -----------------------------
     def endGame(self, gameToEnd):
 
-        # Do stuff under here
         self.lock.acquire()
         try:
+            # Get the node via the id of gameToEnd
             node = self.gameList.getGameWithID(gameToEnd.getID())
+
+            # Get the players
             player1Name = node.getP1()
             player2Name = node.getP2()
+
+            # Set their state to available
             player1 = self.playerList[player1Name]
             player1[self.status] = 'available'
             player2 = self.playerList[player2Name]
             player2[self.status] = 'available'
+
+            # Remove the game and edit game counter
             self.gameCount -= 1
             if not self.gameList.removeGame(gameToEnd):
                 print("couldnt delete game")
             self.lock.release()
+
+            # if they are auto match players, assign them to new games
             if player1[self.automatch]:
                 print('automatching player 1 again')
                 self.autoPlay(player1Name)
@@ -56,13 +68,25 @@ class GameMaster():
         except:
             print ('couldnt delete game')
 
-
+    # -- endFromDisconnect --
+    # ------------------------
+    # This will gracefully end the game of a user that has been dissconnected,
+    # and either match the other user to a new game if they are automatched, or set them to available.
+    # ------------------------
     def endFromDisconnect(self, disconnectedUser):
+
         self.lock.acquire()
         try:
+            # Get the node of the game the dissconnected user was in
             node = self.gameList.getGameWithPlayer(disconnectedUser)
+
+            # if we found one
             if node:
+
+                # Grab the other player
                 otherPlayer = node.getOtherPlayer(disconnectedUser)
+
+            # otherwise just tell the other user there has been a problme and set them to available
             else: return
             if otherPlayer:
                 playerToNotify = self.playerList[otherPlayer]
@@ -72,10 +96,15 @@ class GameMaster():
                     'message': 'Other player disconnected, you have been changed to available'
                 }
                 playerToNotify[self.client].sendto(json.dumps(message).encode('utf-8'), playerToNotify[self.address])
+            # Edit the game count and remove the game from the list
             self.gameCount -= 1
             self.gameList.removeGame(node.getGame())
+
+            # then remove the user from both lists
             del self.playerList[disconnectedUser]
             self.playerNames.remove(disconnectedUser)
+
+            # If theres a game open, and its the one we were just in, set game open to null
             if self.gameOpen:
                 if self.gameOpen.getGame() is node.getGame():
                     self.gameOpen = None
@@ -265,23 +294,33 @@ class GameMaster():
             player1[self.client].sendto(json.dumps(message).encode('utf-8'), player1[self.address])
             self.lock.release()
 
+    # -- exit --
+    # ---------------------------------
+    # This is called when the user wishes to exit the game.
+    # it will remove them from all lists, as well as call end game
+    # for the game they are in (if they are in one)
+    # ---------------------------------
     def exit(self, usernameToExit):
+        # Grab the player that is extiing
         self.lock.acquire()
-        print(self.playerList)
-        print(usernameToExit + 'in exit')
-        print(self.playerList)
         playerToExit = self.playerList[usernameToExit]
         otherPlayer = None
         #if playerToExit[self.status] == 'busy':
+        # grab the game the exiting player is in
         node = self.gameList.getGameWithPlayer(usernameToExit)
         game = node.getGame()
+
+        # and get the other user in that game
         otherUsername = game.getOtherPlayer(usernameToExit)
         otherUsername = otherUsername['name']
         otherPlayer = self.playerList[otherUsername]
+
+        # end the game they are in
         self.lock.release()
         self.endGame(game)
         self.lock.acquire()
 
+        # inform them they are exiting the game
         exitResponse = {
             'status':'KILL',
             'message':'Exiting from game'
@@ -290,22 +329,36 @@ class GameMaster():
             'status':'OK',
             'message':'Other player has quit game, changing status to available'
         }
+
+        # if the other player exsists
         if otherPlayer:
+
+            #inform them of the disconnect
             otherPlayer[self.client].sendto(json.dumps(response).encode('utf-8'), otherPlayer[self.address])
+
+        # tell the player they are exiting, and then delete them from everything
         playerToExit[self.client].sendto(json.dumps(exitResponse).encode('utf-8'), playerToExit[self.address])
         playerToExit[self.client].close()
         del self.playerList[usernameToExit]
         self.lock.release()
 
-
+    # -- listPlayers --
+    # ---------------------------
+    # this will get a list of all available players
+    # ---------------------------
     def listPlayers(self, askingUsername):
+
         self.lock.acquire()
+
+        # Create the base string
         list = 'here is the list of players currently available\n\n'
 
+        # Grab every available player and concat them into the string
         for i in self.playerList:
             if self.playerList[i][self.status] == 'available':
                 list = list + i + '\n'
 
+        # Give the list to the user
         response = {
             'status':'OK',
             'message':list
@@ -314,17 +367,33 @@ class GameMaster():
         askingPlayer[self.client].sendto(json.dumps(response).encode('utf-8'), askingPlayer[self.address])
         self.lock.release()
 
-
+    # -- listGames --
+    # ---------------------
+    # lists all the games currently being played
+    # ---------------------
     def listGames(self, askingUsername):
+
         self.lock.acquire()
+
+        # get the list from gamelist
         list = self.gameList.getList()
+
+        # make base string for returning
         returnList = 'Here are all the currently active games:\n\n'
+
+        # for every node in the list
         for node in list:
+
+            # concat next game onto the string
             returnList = returnList + 'ID: ' + str(node.getGame().getID())
+
+            # check which player are in the game, and put them in as well.
             returnList = returnList + ', Player(s): ' + node.getP1()
             if node.getP2():
                 returnList = returnList + ', ' + node.getP2()
             returnList = returnList + '\n\n'
+
+        # send the list to the calling user
         response = {
             'status':'OK',
             'message': returnList
@@ -334,17 +403,32 @@ class GameMaster():
         player[self.client].sendto(json.dumps(response).encode('utf-8'), player[self.address])
         self.lock.release()
 
+
+    # -- addObserver --
+    # ----------------------
+    # this will add an observer onto the list of observers
+    # and then add them into the game
+    # ----------------------
     def addObserver(self, ID, client, address, username):
 
         self.lock.acquire()
+
+        # grab the ndoe with the given is for observing
         node = self.gameList.getGameWithID(ID)
+
+        # grab the user from the userlist
         user = self.playerList[username]
 
+        # if the node is there
         if node:
+
+            # add the observer to the game
             game = node.getGame()
             game.addObserver(client, address, username)
             user[self.gameObserving] = game.getID()
+
         else:
+            # otherwise return an error message to the user
             response = {
                 'status':'ERROR',
                 'message':'Couldnt find game with ID ' + ID
@@ -352,20 +436,47 @@ class GameMaster():
             user[self.client].sendto(json.dumps(response).encode('utf-8'), user[self.address])
         self.lock.release()
 
+    # -- removeObserver --
+    # ------------------------
+    # this function will remove an observer from the list,
+    # Then remove them from the game.
+    # ------------------------
     def removeObserver(self, ID, username):
+
         self.lock.acquire()
+
+        # Grab the node
         node = self.gameList.getGameWithID(ID)
+
+        # Grab the user
         user = self.playerList[username]
+
+        # take the user out of the list
         user[self.gameObserving] = ''
+
+        # Get the game and remove the user from the observer list
         game = node.getGame()
         game.removeObserver(username)
         self.lock.release()
 
+    # -- comment --
+    # --------------------
+    # sends the users comment to the game so it can be sent to all users observing
+    # --------------------
     def comment(self, username ,comment):
+
         self.lock.acquire()
+
+        # get the user making the comment
         player = self.playerList[username]
+
+        # get the game the user is observing
         gameID = player[self.gameObserving]
+
+        # grab the game from the list
         node = self.gameList.getGameWithID(gameID)
         game = node.getGame()
+
+        # add the comment
         game.comment(username, comment)
         self.lock.release()

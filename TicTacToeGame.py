@@ -341,7 +341,10 @@ class TicTacToeGame():
     def getID(self):
         return self.ID
 
-
+    # -- getPlayer --
+    # ----------------------------------
+    # Gets the player object from the player sname
+    # ----------------------------------
     def getPlayer(self, playerToGet):
         if playerToGet == self.playerOne['name']:
             return self.playerOne
@@ -350,6 +353,10 @@ class TicTacToeGame():
         else:
             return False
 
+    # -- getOtherplayer --
+    # -------------------------
+    # gets the opposite player of the one whos name is given
+    # -------------------------
     def getOtherPlayer(self, oppositePlayer):
         if oppositePlayer == self.playerOne['name']:
             return self.playerTwo
