@@ -87,6 +87,15 @@ try:
             user_input = input("Please Enter Command: ")
         commands = user_input.split(' ')
         amount_expected = 0
+        if commands[0] == 'comment' and len(commands) > 2:
+            comment = ''
+            for i in range(len(commands)):
+                if i != 0:
+                    comment = comment + str(commands[i]) + ' '
+            comms = []
+            comms.append(commands[0])
+            comms.append(comment)
+            commands = comms
         try:
             if commands[0] == 'help':
                 printHelp()
